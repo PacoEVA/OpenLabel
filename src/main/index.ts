@@ -1,0 +1,79 @@
+import { app, BrowserWindow, session } from 'electron';
+import * as path from 'path';
+import { setupContentSecurityPolicy, setupPermissionHandlers } from './security/csp';
+import { registerLabelIpcHandlers } from './ipc/label.ipc';
+
+/**
+ * OpenLabels - Main Process
+ * Manages Electron lifecycle, window creation, strict isolation, and IPC boundaries.
+ */
+
+let mainWindow: BrowserWindow | null = null;
+
+export function createMainWindow(): BrowserWindow {
+  const preloadPath = path.join(__dirname, '../preload/index.js');
+
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+      nodeIntegration: false,
+      preload: preloadPath,
+    },
+  });
+
+  // Block unauthorized secondary windows
+  win.webContents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+
+  // Block unexpected external navigation
+  win.webContents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    // In production or local development, allow only local origins (file:// or localhost)
+    const isAllowedOrigin =
+      parsedUrl.protocol === 'file:' ||
+      (parsedUrl.hostname === 'localhost' && ['http:', 'https:'].includes(parsedUrl.protocol));
+
+    if (!isAllowedOrigin) {
+      event.preventDefault();
+    }
+  });
+
+  // Load entry HTML in renderer (or dev placeholder)
+  // For Phase 1, we can load a local blank file or data URL if renderer HTML does not exist yet
+  win.loadURL('data:text/html;charset=utf-8,<html><body><h1>OpenLabels</h1></body></html>');
+
+  win.on('closed', () => {
+    mainWindow = null;
+  });
+
+  return win;
+}
+
+// Application Lifecycle
+app.whenReady().then(() => {
+  // Apply security policies to the default session
+  setupContentSecurityPolicy(session.defaultSession);
+  setupPermissionHandlers(session.defaultSession);
+
+  // Register strictly typed IPC endpoints
+  registerLabelIpcHandlers();
+
+  mainWindow = createMainWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow();
+    }
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});

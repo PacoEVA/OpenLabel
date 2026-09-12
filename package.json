@@ -1,0 +1,31 @@
+{
+  "name": "openlabels",
+  "version": "1.0.0",
+  "description": "Open source industrial and commercial label design and printing software",
+  "main": "dist/src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "keywords": [
+    "label",
+    "barcode",
+    "zpl",
+    "printing",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "electron": "^35.0.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
+  }
+}

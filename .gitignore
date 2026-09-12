@@ -1,0 +1,12 @@
+# Ignorar archivos Markdown de especificación
+/FASE_*.md
+/AGENTS.md
+
+# Dependencias y compilación
+node_modules/
+dist/
+coverage/
+.vite/
+.DS_Store
+.vscode/        3
+*.log
