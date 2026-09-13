@@ -122,6 +122,17 @@ export interface ProductionAPI {
   onItemStatusChange(callback: (data: { item: import('../core/production').ProductionItem; run: import('../core/production').ProductionRun }) => void): () => void;
 }
 
+export interface SettingsAPI {
+  getSettings(): Promise<import('../core/settings').AppSettings>;
+  saveSettings(settings: unknown): Promise<{ success: boolean; settings?: import('../core/settings').AppSettings; error?: string }>;
+  resetDefaults(): Promise<{ success: boolean; settings?: import('../core/settings').AppSettings; error?: string }>;
+}
+
+export interface DiagnosticsAPI {
+  getDiagnosticsBundle(): Promise<{ success: boolean; bundle?: import('../main/diagnostics/diagnostics.service').DiagnosticsBundle; error?: string }>;
+  exportDiagnosticsBundle(): Promise<{ success: boolean; filePath?: string; error?: string }>;
+}
+
 declare global {
   interface Window {
     labelAPI: LabelAPI;
@@ -129,5 +140,7 @@ declare global {
     documentAPI: DocumentAPI;
     dataSourceAPI: DataSourceAPI;
     productionAPI: ProductionAPI;
+    settingsAPI: SettingsAPI;
+    diagnosticsAPI: DiagnosticsAPI;
   }
 }

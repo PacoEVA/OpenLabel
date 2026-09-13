@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, session, dialog } from 'electron';
 import * as path from 'path';
 import { setupContentSecurityPolicy, setupPermissionHandlers } from './security/csp';
 import { registerLabelIpcHandlers } from './ipc/label.ipc';
@@ -6,6 +6,9 @@ import { registerPrintingIpcHandlers } from './ipc/printing.ipc';
 import { registerDocumentIpcHandlers } from './ipc/document.ipc';
 import { registerDataSourceIpcHandlers } from './ipc/datasource.ipc';
 import { registerProductionIpcHandlers } from './ipc/production.ipc';
+import { registerSettingsIpcHandlers } from './ipc/settings.ipc';
+import { registerDiagnosticsIpcHandlers } from './ipc/diagnostics.ipc';
+import { getLogger } from './logging/logger';
 import { CredentialVaultService } from './data-sources/credentials/credential-vault.service';
 
 /**
@@ -74,6 +77,8 @@ app.whenReady().then(() => {
   registerPrintingIpcHandlers();
   registerDocumentIpcHandlers();
   registerProductionIpcHandlers();
+  registerSettingsIpcHandlers();
+  registerDiagnosticsIpcHandlers();
 
   const vaultDir = path.join(app.getPath('userData'), 'vault');
   const vaultService = new CredentialVaultService(vaultDir);
@@ -88,8 +93,44 @@ app.whenReady().then(() => {
   });
 });
 
+// Process crash handling and logging
+process.on('uncaughtException', (error) => {
+  try {
+    const logger = getLogger();
+    logger.error('main', 'crash', 'Uncaught Exception in Main Process', {
+      details: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      },
+    });
+  } catch {
+    // Fallback if logger fails
+  }
+
+  dialog.showErrorBox(
+    'Application Error',
+    `An unexpected error occurred.\n\nError: ${error.message}\n\nPlease export a diagnostics bundle from Settings for assistance.`
+  );
+});
+
+process.on('unhandledRejection', (reason) => {
+  try {
+    const logger = getLogger();
+    logger.error('main', 'crash', 'Unhandled Promise Rejection in Main Process', {
+      details: {
+        reason: reason instanceof Error ? reason.message : String(reason),
+        stack: reason instanceof Error ? reason.stack : undefined,
+      },
+    });
+  } catch {
+    // Fallback if logger fails
+  }
+});
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
+

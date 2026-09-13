@@ -195,10 +195,33 @@ const productionAPI = {
   },
 };
 
+const settingsAPI = {
+  getSettings: async () => {
+    return ipcRenderer.invoke('settings:get');
+  },
+  saveSettings: async (settings: unknown) => {
+    return ipcRenderer.invoke('settings:save', settings);
+  },
+  resetDefaults: async () => {
+    return ipcRenderer.invoke('settings:reset');
+  },
+};
+
+const diagnosticsAPI = {
+  getDiagnosticsBundle: async () => {
+    return ipcRenderer.invoke('diagnostics:get-bundle');
+  },
+  exportDiagnosticsBundle: async () => {
+    return ipcRenderer.invoke('diagnostics:export-bundle');
+  },
+};
+
 // Expose safe APIs to the main world under explicit identifiers
 contextBridge.exposeInMainWorld('labelAPI', labelAPI);
 contextBridge.exposeInMainWorld('printAPI', printAPI);
 contextBridge.exposeInMainWorld('documentAPI', documentAPI);
 contextBridge.exposeInMainWorld('dataSourceAPI', dataSourceAPI);
 contextBridge.exposeInMainWorld('productionAPI', productionAPI);
+contextBridge.exposeInMainWorld('settingsAPI', settingsAPI);
+contextBridge.exposeInMainWorld('diagnosticsAPI', diagnosticsAPI);
 

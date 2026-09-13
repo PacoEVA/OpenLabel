@@ -5,8 +5,27 @@
 # Dependencias y compilación
 node_modules/
 dist/
+release/
 coverage/
 .vite/
 .DS_Store
-.vscode/        
+.vscode/
 *.log
+.logs/
+
+# Secrets, Environment & Certificates
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+*.pem
+*.cer
+*.crt
+
+# Runtime User Data & Credentials
+.recent-files.json
+userData/
+vault/
+*.tmp
+*.corrupt.*

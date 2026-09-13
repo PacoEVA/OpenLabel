@@ -1,17 +1,22 @@
 {
   "name": "openlabels",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Open source industrial and commercial label design and printing software",
   "main": "dist/src/main/index.js",
+  "author": "OpenLabels Contributors",
+  "homepage": "https://github.com/PacoEVA/OpenLabels",
   "scripts": {
     "start": "electron .",
     "dev": "vite",
-    "build:renderer": "vite build",
-    "build:main": "tsc",
-    "build": "vite build && tsc",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "clean": "node -e \"fs.rmSync('dist', {recursive: true, force: true})\"",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.build.json",
+    "build": "npm run clean && npm run build:renderer && npm run build:main",
+    "package": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "keywords": [
     "label",
@@ -20,7 +25,6 @@
     "printing",
     "electron"
   ],
-  "author": "",
   "license": "MIT",
   "dependencies": {
     "bwip-js": "^4.11.4",
@@ -50,6 +54,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.6.0",
     "electron": "^35.0.0",
+    "electron-builder": "^26.15.3",
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.8.2",

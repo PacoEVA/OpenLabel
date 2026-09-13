@@ -1,0 +1,38 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.openlabels.designer",
+  "productName": "OpenLabels",
+  "copyright": "Copyright © 2026 OpenLabels Contributors",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/renderer/**/*",
+    "dist/src/main/**/*",
+    "dist/src/preload/**/*",
+    "dist/src/core/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "dist/src/main/index.js"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "OpenLabels",
+    "deleteAppDataOnUninstall": false,
+    "runAfterFinish": true
+  }
+}

@@ -11,6 +11,7 @@ import {
   Share2,
   Printer,
   Factory,
+  Settings as SettingsIcon,
   FilePlus,
   FolderOpen,
   Save,
@@ -33,6 +34,7 @@ import {
 import { ExportPreviewDialog } from '../export/ExportPreviewDialog';
 import { PrintDialog } from '../printing/PrintDialog';
 import { ProductionModal } from '../production/ProductionModal';
+import { SettingsDialog } from '../settings/SettingsDialog';
 import { useDocumentOperations } from '../../hooks/useDocumentOperations';
 import { UnsavedChangesDialog } from '../dialogs/UnsavedChangesDialog';
 import { TemplatePickerDialog } from '../dialogs/TemplatePickerDialog';
@@ -51,6 +53,7 @@ export const TopBar: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isProductionOpen, setIsProductionOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
 
@@ -270,6 +273,15 @@ export const TopBar: React.FC = () => {
           <Factory className="w-3.5 h-3.5" />
           <span>Production</span>
         </button>
+
+        {/* Global Settings Trigger (Phase 10) */}
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          title="Application Preferences & Environment Settings (Phase 10)"
+          className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-700/60 rounded transition-colors ml-1"
+        >
+          <SettingsIcon className="w-4 h-4" />
+        </button>
       </div>
 
       <ExportPreviewDialog
@@ -285,6 +297,11 @@ export const TopBar: React.FC = () => {
       <ProductionModal
         isOpen={isProductionOpen}
         onClose={() => setIsProductionOpen(false)}
+      />
+
+      <SettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       <UnsavedChangesDialog

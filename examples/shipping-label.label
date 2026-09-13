@@ -1,0 +1,92 @@
+{
+  "format": "open-label",
+  "formatVersion": 1,
+  "createdAt": "2026-09-13T10:00:00.000Z",
+  "document": {
+    "version": "1.0.0",
+    "meta": {
+      "title": "Standard Logistics Shipping Label",
+      "author": "OpenLabels",
+      "created": "2026-09-13T10:00:00.000Z"
+    },
+    "dimensions": {
+      "width": 100,
+      "height": 150,
+      "unit": "mm",
+      "dpi": 203
+    },
+    "elements": [
+      {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "type": "text",
+        "x": 5,
+        "y": 5,
+        "width": 90,
+        "height": 10,
+        "rotation": 0,
+        "locked": false,
+        "content": "EXPRESS LOGISTICS",
+        "fontSize": 18,
+        "fontFamily": "sans-serif",
+        "bold": true,
+        "italic": false,
+        "align": "left"
+      },
+      {
+        "id": "22222222-2222-4222-8222-222222222222",
+        "type": "line",
+        "x": 5,
+        "y": 18,
+        "width": 90,
+        "height": 1,
+        "rotation": 0,
+        "locked": false,
+        "stroke": "#000000",
+        "strokeWidth": 1,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "type": "text",
+        "x": 5,
+        "y": 22,
+        "width": 90,
+        "height": 16,
+        "rotation": 0,
+        "locked": false,
+        "content": "SHIP TO: Warehouse Distribution Center 4B",
+        "fontSize": 12,
+        "fontFamily": "sans-serif",
+        "bold": false,
+        "italic": false,
+        "align": "left"
+      },
+      {
+        "id": "44444444-4444-4444-8444-444444444444",
+        "type": "barcode",
+        "x": 10,
+        "y": 55,
+        "width": 80,
+        "height": 30,
+        "rotation": 0,
+        "locked": false,
+        "symbology": "code128",
+        "data": "EXP-9876543210-US",
+        "narrowBarRatio": 2,
+        "displayValue": true
+      },
+      {
+        "id": "55555555-5555-4555-8555-555555555555",
+        "type": "qrcode",
+        "x": 10,
+        "y": 95,
+        "width": 35,
+        "height": 35,
+        "rotation": 0,
+        "locked": false,
+        "data": "https://tracking.openlabels.local/track?id=EXP-9876543210-US",
+        "errorCorrection": "M"
+      }
+    ]
+  }
+}

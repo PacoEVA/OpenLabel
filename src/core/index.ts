@@ -12,3 +12,4 @@ export * from './documents';
 export * from './data';
 export * from './data-sources';
 export * from './production';
+export * from './settings';
