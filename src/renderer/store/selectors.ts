@@ -43,3 +43,16 @@ export const selectSnap = (state: EditorState): EditorState['snap'] => state.sna
 export const selectCanUndo = (state: EditorState): boolean => canUndo(state.history);
 
 export const selectCanRedo = (state: EditorState): boolean => canRedo(state.history);
+
+export const selectSession = (state: EditorState) => state.session;
+
+export const selectIsDirty = (state: EditorState): boolean => state.session.isDirty;
+
+export const selectFilePath = (state: EditorState): string | null => state.session.filePath;
+
+export const selectDisplayName = (state: EditorState): string => state.session.displayName;
+
+export const selectIsMigrated = (state: EditorState): boolean => state.session.isMigrated;
+
+export const selectIsDocumentOpen = (state: EditorState): boolean => state.isDocumentOpen;
+

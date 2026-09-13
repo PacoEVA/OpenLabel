@@ -75,6 +75,46 @@ const printAPI: PrintAPI = {
   },
 };
 
+const documentAPI = {
+  openDocument: async () => {
+    return ipcRenderer.invoke('document:open');
+  },
+  saveDocument: async (filePath: string, document: unknown) => {
+    return ipcRenderer.invoke('document:save', { filePath, document });
+  },
+  saveDocumentAs: async (document: unknown, defaultTitle?: string) => {
+    return ipcRenderer.invoke('document:save-as', { document, defaultTitle });
+  },
+  readDocumentFile: async (filePath: string) => {
+    return ipcRenderer.invoke('document:read-file', { filePath });
+  },
+  getRecentFiles: async () => {
+    return ipcRenderer.invoke('document:get-recent-files');
+  },
+  clearRecentFiles: async () => {
+    return ipcRenderer.invoke('document:clear-recent-files');
+  },
+  autosaveSnapshot: async (snapshot: unknown) => {
+    return ipcRenderer.invoke('document:save-recovery-snapshot', snapshot);
+  },
+  getRecoveryItems: async () => {
+    return ipcRenderer.invoke('document:get-recovery-items');
+  },
+  removeRecoveryItem: async (documentId: string) => {
+    return ipcRenderer.invoke('document:remove-recovery-item', { documentId });
+  },
+  listTemplates: async () => {
+    return ipcRenderer.invoke('document:list-templates');
+  },
+  getTemplate: async (templateId: string, isBuiltIn: boolean) => {
+    return ipcRenderer.invoke('document:get-template', { templateId, isBuiltIn });
+  },
+  saveAsTemplate: async (templateName: string, document: unknown) => {
+    return ipcRenderer.invoke('document:save-user-template', { templateName, document });
+  },
+};
+
 // Expose safe APIs to the main world under explicit identifiers
 contextBridge.exposeInMainWorld('labelAPI', labelAPI);
 contextBridge.exposeInMainWorld('printAPI', printAPI);
+contextBridge.exposeInMainWorld('documentAPI', documentAPI);

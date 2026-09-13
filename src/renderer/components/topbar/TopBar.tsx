@@ -10,10 +10,19 @@ import {
   Layers,
   Share2,
   Printer,
+  FilePlus,
+  FolderOpen,
+  Save,
+  FileDown,
+  LayoutTemplate,
+  Bookmark,
+  XSquare,
 } from 'lucide-react';
 import { useEditorStore } from '../../store/editor.store';
 import {
   selectDocument,
+  selectSession,
+  selectIsDocumentOpen,
   selectZoom,
   selectGrid,
   selectSnap,
@@ -22,9 +31,15 @@ import {
 } from '../../store/selectors';
 import { ExportPreviewDialog } from '../export/ExportPreviewDialog';
 import { PrintDialog } from '../printing/PrintDialog';
+import { useDocumentOperations } from '../../hooks/useDocumentOperations';
+import { UnsavedChangesDialog } from '../dialogs/UnsavedChangesDialog';
+import { TemplatePickerDialog } from '../dialogs/TemplatePickerDialog';
+import { SaveTemplateDialog } from '../dialogs/SaveTemplateDialog';
 
 export const TopBar: React.FC = () => {
   const document = useEditorStore(selectDocument);
+  const session = useEditorStore(selectSession);
+  const isDocumentOpen = useEditorStore(selectIsDocumentOpen);
   const zoom = useEditorStore(selectZoom);
   const grid = useEditorStore(selectGrid);
   const snap = useEditorStore(selectSnap);
@@ -33,6 +48,10 @@ export const TopBar: React.FC = () => {
 
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
+
+  const docOps = useDocumentOperations();
 
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
@@ -45,14 +64,82 @@ export const TopBar: React.FC = () => {
 
   return (
     <header className="h-10 bg-panel-header border-b border-panel-border flex items-center justify-between px-3 text-xs select-none">
-      {/* Document Info */}
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2">
-          <Layers className="w-4 h-4 text-blue-400" />
-          <span className="font-semibold text-zinc-100 tracking-wide">
-            {document.meta.title || 'Untitled Label'}
+      {/* Document Info & File Actions */}
+      <div className="flex items-center space-x-2">
+        {/* Document Title & Dirty State */}
+        <div className="flex items-center space-x-1.5 mr-1">
+          <Layers className="w-4 h-4 text-blue-400 shrink-0" />
+          <span className="font-semibold text-zinc-100 tracking-wide max-w-[160px] truncate" title={session.displayName}>
+            {session.displayName}
           </span>
+          {session.isDirty && (
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Unsaved changes" />
+          )}
         </div>
+
+        {/* Quick File Operations */}
+        <div className="flex items-center space-x-0.5 bg-zinc-800/80 p-0.5 rounded border border-zinc-700/50">
+          <button
+            onClick={docOps.handleNew}
+            title="New Label (Ctrl+N)"
+            className="p-1 text-zinc-300 hover:text-white hover:bg-zinc-700/60 rounded transition-colors"
+          >
+            <FilePlus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={docOps.handleOpen}
+            title="Open Label (Ctrl+O)"
+            className="p-1 text-zinc-300 hover:text-white hover:bg-zinc-700/60 rounded transition-colors"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={docOps.handleSave}
+            title={`Save Label (Ctrl+S)${session.isDirty ? ' - Unsaved Changes' : ''}`}
+            className={`p-1 rounded transition-colors ${
+              session.isDirty
+                ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-950/40'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-700/60'
+            }`}
+          >
+            <Save className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={docOps.handleSaveAs}
+            title="Save Label As... (Ctrl+Shift+S)"
+            className="p-1 text-zinc-300 hover:text-white hover:bg-zinc-700/60 rounded transition-colors"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+          </button>
+          <div className="h-3.5 w-px bg-zinc-700/60 mx-0.5" />
+          <button
+            onClick={() => setIsTemplatePickerOpen(true)}
+            title="Templates Library"
+            className="p-1 text-zinc-300 hover:text-white hover:bg-zinc-700/60 rounded transition-colors"
+          >
+            <LayoutTemplate className="w-3.5 h-3.5" />
+          </button>
+          {isDocumentOpen && (
+            <>
+              <button
+                onClick={() => setIsSaveTemplateOpen(true)}
+                title="Save as Template"
+                className="p-1 text-zinc-300 hover:text-white hover:bg-zinc-700/60 rounded transition-colors"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+              </button>
+              <div className="h-3.5 w-px bg-zinc-700/60 mx-0.5" />
+              <button
+                onClick={docOps.handleClose}
+                title="Close Document"
+                className="p-1 text-zinc-400 hover:text-red-300 hover:bg-zinc-700/60 rounded transition-colors"
+              >
+                <XSquare className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+
         <div className="flex items-center space-x-1.5 text-zinc-400 text-2xs bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
           <span>{document.dimensions.width} × {document.dimensions.height} {document.dimensions.unit}</span>
           <span className="text-zinc-600">|</span>
@@ -180,6 +267,24 @@ export const TopBar: React.FC = () => {
       <PrintDialog
         isOpen={isPrintOpen}
         onClose={() => setIsPrintOpen(false)}
+      />
+
+      <UnsavedChangesDialog
+        isOpen={docOps.isUnsavedDialogOpen}
+        displayName={docOps.displayName}
+        onSave={docOps.handleModalSave}
+        onDiscard={docOps.handleModalDiscard}
+        onCancel={docOps.handleModalCancel}
+      />
+
+      <TemplatePickerDialog
+        isOpen={isTemplatePickerOpen}
+        onClose={() => setIsTemplatePickerOpen(false)}
+      />
+
+      <SaveTemplateDialog
+        isOpen={isSaveTemplateOpen}
+        onClose={() => setIsSaveTemplateOpen(false)}
       />
     </header>
   );

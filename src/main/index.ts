@@ -3,6 +3,7 @@ import * as path from 'path';
 import { setupContentSecurityPolicy, setupPermissionHandlers } from './security/csp';
 import { registerLabelIpcHandlers } from './ipc/label.ipc';
 import { registerPrintingIpcHandlers } from './ipc/printing.ipc';
+import { registerDocumentIpcHandlers } from './ipc/document.ipc';
 
 /**
  * OpenLabels - Main Process
@@ -68,6 +69,7 @@ app.whenReady().then(() => {
   // Register strictly typed IPC endpoints
   registerLabelIpcHandlers();
   registerPrintingIpcHandlers();
+  registerDocumentIpcHandlers();
 
   mainWindow = createMainWindow();
 

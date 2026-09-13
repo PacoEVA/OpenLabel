@@ -44,9 +44,62 @@ export interface PrintAPI {
   onJobStatusChanged(callback: (job: PrintJob) => void): () => void;
 }
 
+export interface OpenDocumentIPCResult {
+  canceled?: boolean;
+  success: boolean;
+  document?: import('../core/schemas/label.schema').LabelDocument;
+  filePath?: string;
+  migrated?: boolean;
+  warnings?: Array<{ code: string; message: string }>;
+  errors?: Array<{ code: string; message: string; details?: unknown }>;
+}
+
+export interface SaveDocumentIPCResult {
+  canceled?: boolean;
+  success: boolean;
+  filePath?: string;
+  savedAt?: string;
+  errors?: Array<{ code: string; message: string; details?: unknown }>;
+}
+
+export interface RecentFileIPCItem {
+  filePath: string;
+  displayName: string;
+  lastOpenedAt: string;
+}
+
+export interface TemplateSummaryIPC {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  isBuiltIn: boolean;
+  dimensions: {
+    width: number;
+    height: number;
+    unit: 'mm' | 'inch';
+  };
+}
+
+export interface DocumentAPI {
+  openDocument(): Promise<OpenDocumentIPCResult>;
+  saveDocument(filePath: string, document: unknown): Promise<SaveDocumentIPCResult>;
+  saveDocumentAs(document: unknown, defaultTitle?: string): Promise<SaveDocumentIPCResult>;
+  readDocumentFile(filePath: string): Promise<OpenDocumentIPCResult>;
+  getRecentFiles(): Promise<RecentFileIPCItem[]>;
+  clearRecentFiles(): Promise<{ success: boolean }>;
+  autosaveSnapshot(snapshot: unknown): Promise<{ success: boolean; errors?: string[] }>;
+  getRecoveryItems(): Promise<import('../core/documents/recovery-snapshot.schema').RecoverySnapshot[]>;
+  removeRecoveryItem(documentId: string): Promise<{ success: boolean }>;
+  listTemplates(): Promise<{ builtIn: TemplateSummaryIPC[]; user: TemplateSummaryIPC[] }>;
+  getTemplate(templateId: string, isBuiltIn: boolean): Promise<import('../core/schemas/label.schema').LabelDocument | null>;
+  saveAsTemplate(templateName: string, document: unknown): Promise<{ success: boolean; templateId?: string; errors?: string[] }>;
+}
+
 declare global {
   interface Window {
     labelAPI: LabelAPI;
     printAPI: PrintAPI;
+    documentAPI: DocumentAPI;
   }
 }
