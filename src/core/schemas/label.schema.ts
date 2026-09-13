@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { LabelDataModelSchema, LabelDataModel } from '../data/data.schema';
+import { ExternalDataSourceSchema, ExternalDataSource } from '../data-sources/datasource.schema';
+import { FieldMappingSchema, FieldMapping } from '../data-sources/field-mapping.schema';
 
 /**
  * OpenLabels - Label Document Schema & Types
@@ -146,5 +148,7 @@ export const LabelDocumentSchema = z.object({
   dimensions: LabelDimensionsSchema,
   elements: z.array(LabelElementSchema),
   dataModel: LabelDataModelSchema.optional(),
+  dataSources: z.array(ExternalDataSourceSchema).optional(),
+  fieldMappings: z.record(z.string(), FieldMappingSchema).optional(),
 });
 export type LabelDocument = z.infer<typeof LabelDocumentSchema>;

@@ -96,10 +96,20 @@ export interface DocumentAPI {
   saveAsTemplate(templateName: string, document: unknown): Promise<{ success: boolean; templateId?: string; errors?: string[] }>;
 }
 
+export interface DataSourceAPI {
+  selectFile(type: 'csv' | 'excel'): Promise<{ canceled: boolean; filePath?: string }>;
+  testSource(source: unknown): Promise<{ success: boolean; message?: string }>;
+  previewSource(source: unknown, limit?: number): Promise<{ success: boolean; dataset?: import('../core/data-sources').Dataset; error?: string }>;
+  listCredentials(): Promise<import('../core/data-sources').CredentialMetadata[]>;
+  setCredential(payload: import('../core/data-sources').SetCredentialPayload): Promise<{ success: boolean; credential?: import('../core/data-sources').CredentialMetadata; error?: string }>;
+  deleteCredential(id: string): Promise<{ success: boolean }>;
+}
+
 declare global {
   interface Window {
     labelAPI: LabelAPI;
     printAPI: PrintAPI;
     documentAPI: DocumentAPI;
+    dataSourceAPI: DataSourceAPI;
   }
 }

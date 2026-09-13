@@ -4,6 +4,8 @@ import { setupContentSecurityPolicy, setupPermissionHandlers } from './security/
 import { registerLabelIpcHandlers } from './ipc/label.ipc';
 import { registerPrintingIpcHandlers } from './ipc/printing.ipc';
 import { registerDocumentIpcHandlers } from './ipc/document.ipc';
+import { registerDataSourceIpcHandlers } from './ipc/datasource.ipc';
+import { CredentialVaultService } from './data-sources/credentials/credential-vault.service';
 
 /**
  * OpenLabels - Main Process
@@ -70,6 +72,10 @@ app.whenReady().then(() => {
   registerLabelIpcHandlers();
   registerPrintingIpcHandlers();
   registerDocumentIpcHandlers();
+
+  const vaultDir = path.join(app.getPath('userData'), 'vault');
+  const vaultService = new CredentialVaultService(vaultDir);
+  registerDataSourceIpcHandlers(vaultService);
 
   mainWindow = createMainWindow();
 

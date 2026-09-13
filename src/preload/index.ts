@@ -114,7 +114,30 @@ const documentAPI = {
   },
 };
 
+const dataSourceAPI = {
+  selectFile: async (type: 'csv' | 'excel') => {
+    return ipcRenderer.invoke('datasource:select-file', type);
+  },
+  testSource: async (source: unknown) => {
+    return ipcRenderer.invoke('datasource:test', source);
+  },
+  previewSource: async (source: unknown, limit?: number) => {
+    return ipcRenderer.invoke('datasource:preview', { source, limit });
+  },
+  listCredentials: async () => {
+    return ipcRenderer.invoke('datasource:list-credentials');
+  },
+  setCredential: async (payload: unknown) => {
+    return ipcRenderer.invoke('datasource:set-credential', payload);
+  },
+  deleteCredential: async (id: string) => {
+    return ipcRenderer.invoke('datasource:delete-credential', id);
+  },
+};
+
 // Expose safe APIs to the main world under explicit identifiers
 contextBridge.exposeInMainWorld('labelAPI', labelAPI);
 contextBridge.exposeInMainWorld('printAPI', printAPI);
 contextBridge.exposeInMainWorld('documentAPI', documentAPI);
+contextBridge.exposeInMainWorld('dataSourceAPI', dataSourceAPI);
+

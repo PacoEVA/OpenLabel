@@ -29,12 +29,26 @@ export function serializeLabelFile(
 
   const now = new Date().toISOString();
 
+  // Defensively guarantee no secrets or temporary previews are included in document
+  const cleanDoc = { ...validation.data };
+  if (cleanDoc.dataSources) {
+    cleanDoc.dataSources = cleanDoc.dataSources.map((ds) => {
+      const copy = { ...ds, config: { ...(ds.config as Record<string, unknown>) } };
+      delete copy.config.password;
+      delete copy.config.secret;
+      delete copy.config.token;
+      delete (copy as Record<string, unknown>).previewRows;
+      delete (copy as Record<string, unknown>).cachedDataset;
+      return copy as typeof ds;
+    });
+  }
+
   // 2. Wrap inside the canonical format container
   const container: LabelFile = {
     format: OPEN_LABEL_FORMAT_ID,
     formatVersion: CURRENT_FORMAT_VERSION,
     updatedAt: now,
-    document: validation.data,
+    document: cleanDoc,
   };
 
   try {
