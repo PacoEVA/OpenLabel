@@ -9,6 +9,7 @@ import {
   Magnet,
   Layers,
   Share2,
+  Printer,
 } from 'lucide-react';
 import { useEditorStore } from '../../store/editor.store';
 import {
@@ -20,6 +21,7 @@ import {
   selectCanRedo,
 } from '../../store/selectors';
 import { ExportPreviewDialog } from '../export/ExportPreviewDialog';
+import { PrintDialog } from '../printing/PrintDialog';
 
 export const TopBar: React.FC = () => {
   const document = useEditorStore(selectDocument);
@@ -30,6 +32,7 @@ export const TopBar: React.FC = () => {
   const canRedoAction = useEditorStore(selectCanRedo);
 
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
 
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
@@ -157,11 +160,26 @@ export const TopBar: React.FC = () => {
           <Share2 className="w-3.5 h-3.5" />
           <span>Export</span>
         </button>
+
+        {/* Print Dialog Trigger */}
+        <button
+          onClick={() => setIsPrintOpen(true)}
+          title="Print to Hardware / OS Spooler (Phase 5)"
+          className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs flex items-center space-x-1.5 font-medium transition-colors shadow-sm ml-1"
+        >
+          <Printer className="w-3.5 h-3.5" />
+          <span>Print</span>
+        </button>
       </div>
 
       <ExportPreviewDialog
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
+      />
+
+      <PrintDialog
+        isOpen={isPrintOpen}
+        onClose={() => setIsPrintOpen(false)}
       />
     </header>
   );

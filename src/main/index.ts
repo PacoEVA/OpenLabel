@@ -2,6 +2,7 @@ import { app, BrowserWindow, session } from 'electron';
 import * as path from 'path';
 import { setupContentSecurityPolicy, setupPermissionHandlers } from './security/csp';
 import { registerLabelIpcHandlers } from './ipc/label.ipc';
+import { registerPrintingIpcHandlers } from './ipc/printing.ipc';
 
 /**
  * OpenLabels - Main Process
@@ -66,6 +67,7 @@ app.whenReady().then(() => {
 
   // Register strictly typed IPC endpoints
   registerLabelIpcHandlers();
+  registerPrintingIpcHandlers();
 
   mainWindow = createMainWindow();
 
