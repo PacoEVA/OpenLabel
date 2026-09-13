@@ -1,0 +1,71 @@
+import React, { useState } from 'react';
+import { TopBar } from '../components/topbar/TopBar';
+import { Toolbar } from '../components/toolbar/Toolbar';
+import { EditorWorkspace } from './EditorWorkspace';
+import { PropertiesPanel } from '../components/properties/PropertiesPanel';
+import { LayersPanel } from '../components/layers/LayersPanel';
+import { StatusBar } from '../components/statusbar/StatusBar';
+import { Sliders, Layers as LayersIcon } from 'lucide-react';
+import { useEditorHotkeys } from '../hooks/use-editor-hotkeys';
+
+interface EditorShellProps {
+  children?: React.ReactNode;
+}
+
+export const EditorShell: React.FC<EditorShellProps> = ({ children }) => {
+  useEditorHotkeys();
+  const [rightPanelTab, setRightPanelTab] = useState<'properties' | 'layers'>('properties');
+
+  return (
+    <div className="w-full h-full flex flex-col bg-workspace-bg text-zinc-200 overflow-hidden font-sans select-none">
+      {/* Top Application Bar */}
+      <TopBar />
+
+      {/* Main Workspace Body */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Toolbar */}
+        <Toolbar />
+
+        {/* Central Workspace Area */}
+        <EditorWorkspace>{children}</EditorWorkspace>
+
+        {/* Right Sidebar with Tabs */}
+        <div className="flex flex-col bg-panel-bg border-l border-panel-border">
+          {/* Sidebar Tabs */}
+          <div className="h-8 flex border-b border-panel-border bg-panel-header text-2xs font-semibold">
+            <button
+              onClick={() => setRightPanelTab('properties')}
+              className={`flex-1 flex items-center justify-center space-x-1.5 transition-colors border-r border-panel-border ${
+                rightPanelTab === 'properties'
+                  ? 'bg-panel-bg text-zinc-100 border-t-2 border-t-blue-500'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
+              }`}
+            >
+              <Sliders className="w-3 h-3" />
+              <span>Properties</span>
+            </button>
+            <button
+              onClick={() => setRightPanelTab('layers')}
+              className={`flex-1 flex items-center justify-center space-x-1.5 transition-colors ${
+                rightPanelTab === 'layers'
+                  ? 'bg-panel-bg text-zinc-100 border-t-2 border-t-blue-500'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
+              }`}
+            >
+              <LayersIcon className="w-3 h-3" />
+              <span>Layers</span>
+            </button>
+          </div>
+
+          {/* Active Sidebar Tab Panel */}
+          <div className="flex-1 overflow-hidden">
+            {rightPanelTab === 'properties' ? <PropertiesPanel /> : <LayersPanel />}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Status Bar */}
+      <StatusBar />
+    </div>
+  );
+};

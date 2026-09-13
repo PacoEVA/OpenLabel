@@ -5,10 +5,13 @@
   "main": "dist/src/main/index.js",
   "scripts": {
     "start": "electron .",
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build:main": "tsc",
+    "build": "vite build && tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "label",
@@ -20,11 +23,25 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "zod": "^3.24.2"
+    "konva": "^10.5.0",
+    "lucide-react": "^1.45.0",
+    "motion": "^13.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-konva": "^19.2.7",
+    "zod": "^3.24.2",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.13.9",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "autoprefixer": "^10.6.0",
     "electron": "^35.0.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.8.2",
     "vitest": "^3.0.7"
   }

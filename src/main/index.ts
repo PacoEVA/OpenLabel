@@ -43,9 +43,13 @@ export function createMainWindow(): BrowserWindow {
     }
   });
 
-  // Load entry HTML in renderer (or dev placeholder)
-  // For Phase 1, we can load a local blank file or data URL if renderer HTML does not exist yet
-  win.loadURL('data:text/html;charset=utf-8,<html><body><h1>OpenLabels</h1></body></html>');
+  // Load entry HTML in renderer
+  const rendererPath = path.join(__dirname, '../../renderer/index.html');
+  if (process.env.NODE_ENV === 'development' && !app.isPackaged) {
+    win.loadURL('http://localhost:5173');
+  } else {
+    win.loadFile(rendererPath);
+  }
 
   win.on('closed', () => {
     mainWindow = null;

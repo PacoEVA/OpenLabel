@@ -8,5 +8,5 @@ dist/
 coverage/
 .vite/
 .DS_Store
-.vscode/        3
+.vscode/        
 *.log
