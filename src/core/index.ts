@@ -5,3 +5,4 @@
 
 export * from './units/converter';
 export * from './schemas/label.schema';
+export * from './barcodes';

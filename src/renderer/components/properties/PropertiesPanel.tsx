@@ -1,8 +1,28 @@
 import React from 'react';
-import { Lock, Unlock, Copy, Trash2, Sliders, Type as TypeIcon } from 'lucide-react';
+import {
+  Lock,
+  Unlock,
+  Copy,
+  Trash2,
+  Sliders,
+  Type as TypeIcon,
+  Barcode as BarcodeIcon,
+  QrCode as QrIcon,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react';
 import { useEditorStore } from '../../store/editor.store';
 import { selectFirstSelectedElement, selectDocument } from '../../store/selectors';
-import { TextElement, RectangleElement, LineElement } from '../../../core/schemas/label.schema';
+import {
+  TextElement,
+  RectangleElement,
+  LineElement,
+  BarcodeElement,
+  QrCodeElement,
+} from '../../../core/schemas/label.schema';
+import { calculateEan13CheckDigit } from '../../../core/barcodes/symbologies/ean13';
+import { validateBarcodeData } from '../../../core/barcodes/barcode-validator';
+import { dotsToMm } from '../../../core/units/converter';
 
 export const PropertiesPanel: React.FC = () => {
   const selectedElement = useEditorStore(selectFirstSelectedElement);
@@ -45,6 +65,8 @@ export const PropertiesPanel: React.FC = () => {
   const isText = selectedElement.type === 'text';
   const isRect = selectedElement.type === 'rectangle';
   const isLine = selectedElement.type === 'line';
+  const isBarcode = selectedElement.type === 'barcode';
+  const isQrCode = selectedElement.type === 'qrcode';
 
   return (
     <aside className="w-64 bg-panel-bg border-l border-panel-border flex flex-col h-full text-xs select-none">
@@ -285,6 +307,239 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Barcode 1D / 2D Properties */}
+        {isBarcode && (() => {
+          const barcodeEl = selectedElement as BarcodeElement;
+          const dots = barcodeEl.narrowBarRatio || 2;
+          const physicalMm = dotsToMm(dots, document.dimensions.dpi);
+          const validation = validateBarcodeData(barcodeEl.symbology, barcodeEl.data);
+
+          let eanCheckDigitInfo: {
+            expected: number;
+            actual: number;
+            isValid: boolean;
+            isCalculated: boolean;
+          } | null = null;
+
+          if (barcodeEl.symbology === 'ean13') {
+            const digitsOnly = /^\d+$/.test(barcodeEl.data);
+            if (digitsOnly && (barcodeEl.data.length === 12 || barcodeEl.data.length === 13)) {
+              try {
+                const expectedCheck = calculateEan13CheckDigit(barcodeEl.data.slice(0, 12));
+                const is13 = barcodeEl.data.length === 13;
+                const actualCheck = is13 ? parseInt(barcodeEl.data[12], 10) : expectedCheck;
+                const isValid = is13 ? actualCheck === expectedCheck : true;
+                eanCheckDigitInfo = {
+                  expected: expectedCheck,
+                  actual: actualCheck,
+                  isValid,
+                  isCalculated: !is13,
+                };
+              } catch {
+                // Ignore calculation errors for live typing
+              }
+            }
+          }
+
+          return (
+            <div className="pt-2 border-t border-zinc-800 space-y-3">
+              <h4 className="text-2xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center space-x-1">
+                <BarcodeIcon className="w-3 h-3" />
+                <span>Barcode Properties</span>
+              </h4>
+
+              {/* Symbology Selector */}
+              <div>
+                <label className="text-2xs text-zinc-500 block mb-1">Symbology</label>
+                <select
+                  disabled={selectedElement.locked}
+                  value={barcodeEl.symbology}
+                  onChange={(e) =>
+                    updateElement(
+                      selectedElement.id,
+                      { symbology: e.target.value as 'code128' | 'ean13' | 'datamatrix' | 'qrcode' },
+                      true
+                    )
+                  }
+                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                >
+                  <option value="code128">Code 128 (Alphanumeric)</option>
+                  <option value="ean13">EAN-13 (GS1 Retail)</option>
+                  <option value="datamatrix">Data Matrix (ECC 200)</option>
+                </select>
+              </div>
+
+              {/* Data Input */}
+              <div>
+                <label className="text-2xs text-zinc-500 block mb-1">Data / Value</label>
+                <input
+                  type="text"
+                  disabled={selectedElement.locked}
+                  value={barcodeEl.data}
+                  onChange={(e) =>
+                    updateElement(selectedElement.id, { data: e.target.value }, true)
+                  }
+                  className={`w-full bg-zinc-900 border rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none disabled:opacity-50 ${
+                    validation.valid
+                      ? 'border-zinc-700/60 focus:border-blue-500'
+                      : 'border-rose-500/80 focus:border-rose-400'
+                  }`}
+                />
+                {!validation.valid && (
+                  <div className="mt-1 text-2xs text-rose-400 flex items-start space-x-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                    <span>{validation.error}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* EAN-13 Specific Check Digit Status */}
+              {barcodeEl.symbology === 'ean13' && (
+                <div className="bg-zinc-900/80 border border-zinc-800 rounded p-2 text-2xs space-y-1">
+                  <span className="text-zinc-400 font-semibold block">EAN-13 Check Digit:</span>
+                  {eanCheckDigitInfo ? (
+                    <div className="flex items-center space-x-1.5">
+                      {eanCheckDigitInfo.isValid ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="text-emerald-300">
+                            Digit: <strong className="font-mono">{eanCheckDigitInfo.expected}</strong>
+                            {eanCheckDigitInfo.isCalculated ? ' (auto-computed)' : ' (valid check digit)'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                          <span className="text-rose-300">
+                            Invalid! Expected: <strong>{eanCheckDigitInfo.expected}</strong>, received: <strong>{eanCheckDigitInfo.actual}</strong>
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-zinc-500 italic">Enter 12 or 13 digits</span>
+                  )}
+                </div>
+              )}
+
+              {/* Display Human Readable Text Toggle */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="barcode-display-value"
+                  disabled={selectedElement.locked}
+                  checked={barcodeEl.displayValue}
+                  onChange={(e) =>
+                    updateElement(selectedElement.id, { displayValue: e.target.checked }, true)
+                  }
+                  className="rounded bg-zinc-900 border-zinc-700 text-blue-600 focus:ring-0 focus:ring-offset-0"
+                />
+                <label htmlFor="barcode-display-value" className="text-2xs text-zinc-300 cursor-pointer">
+                  Show Human-Readable Text
+                </label>
+              </div>
+
+              {/* X Dimension & Hardware Dots */}
+              <div className="bg-zinc-900/60 border border-zinc-800 rounded p-2 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xs text-zinc-400 font-semibold">X Dimension</span>
+                  <span className="text-2xs text-zinc-500">{document.dimensions.dpi} DPI</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-2xs text-zinc-500 block mb-1">Dots (k)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      disabled={selectedElement.locked}
+                      value={dots}
+                      onChange={(e) => {
+                        const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                        updateElement(selectedElement.id, { narrowBarRatio: val }, true);
+                      }}
+                      className="w-full bg-zinc-900 border border-zinc-700/60 rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-2xs text-zinc-500 block mb-1">Actual Width</label>
+                    <div className="bg-zinc-800/60 border border-zinc-700/30 rounded px-2 py-1 text-zinc-300 text-xs font-mono">
+                      {physicalMm.toFixed(3)} mm
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* QR Code Properties */}
+        {isQrCode && (() => {
+          const qrEl = selectedElement as QrCodeElement;
+          const validation = validateBarcodeData('qrcode', qrEl.data, {
+            errorCorrection: qrEl.errorCorrection,
+          });
+
+          return (
+            <div className="pt-2 border-t border-zinc-800 space-y-3">
+              <h4 className="text-2xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center space-x-1">
+                <QrIcon className="w-3 h-3" />
+                <span>QR Code Properties</span>
+              </h4>
+
+              {/* Data / Payload */}
+              <div>
+                <label className="text-2xs text-zinc-500 block mb-1">Data / URL</label>
+                <textarea
+                  rows={3}
+                  disabled={selectedElement.locked}
+                  value={qrEl.data}
+                  onChange={(e) =>
+                    updateElement(selectedElement.id, { data: e.target.value }, true)
+                  }
+                  className={`w-full bg-zinc-900 border rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none disabled:opacity-50 resize-none ${
+                    validation.valid
+                      ? 'border-zinc-700/60 focus:border-blue-500'
+                      : 'border-rose-500/80 focus:border-rose-400'
+                  }`}
+                />
+                {!validation.valid && (
+                  <div className="mt-1 text-2xs text-rose-400 flex items-start space-x-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                    <span>{validation.error}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Error Correction Level */}
+              <div>
+                <label className="text-2xs text-zinc-500 block mb-1">Error Correction (ECC)</label>
+                <select
+                  disabled={selectedElement.locked}
+                  value={qrEl.errorCorrection || 'M'}
+                  onChange={(e) =>
+                    updateElement(
+                      selectedElement.id,
+                      { errorCorrection: e.target.value as 'L' | 'M' | 'Q' | 'H' },
+                      true
+                    )
+                  }
+                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                >
+                  <option value="L">L - Low (7% recovery)</option>
+                  <option value="M">M - Medium (15% recovery)</option>
+                  <option value="Q">Q - Quartile (25% recovery)</option>
+                  <option value="H">H - High (30% recovery)</option>
+                </select>
+              </div>
+
+              <div className="bg-zinc-900/60 border border-zinc-800 rounded p-2 text-2xs text-zinc-400">
+                <span>Aspect Ratio: <strong>1:1</strong> (Standard 2D square matrix)</span>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </aside>
   );

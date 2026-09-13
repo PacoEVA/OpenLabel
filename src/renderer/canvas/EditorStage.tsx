@@ -115,6 +115,36 @@ export const EditorStage: React.FC = () => {
           orientation: 'horizontal',
         };
         addElement(newLine);
+      } else if (activeTool === 'barcode') {
+        const newBarcode: LabelElement = {
+          id: newId,
+          type: 'barcode',
+          x: Math.max(0, clickXmm),
+          y: Math.max(0, clickYmm),
+          width: 50,
+          height: 25,
+          rotation: 0,
+          locked: false,
+          symbology: 'code128',
+          data: '12345678',
+          narrowBarRatio: 2,
+          displayValue: true,
+        };
+        addElement(newBarcode);
+      } else if (activeTool === 'qrcode') {
+        const newQr: LabelElement = {
+          id: newId,
+          type: 'qrcode',
+          x: Math.max(0, clickXmm),
+          y: Math.max(0, clickYmm),
+          width: 25,
+          height: 25,
+          rotation: 0,
+          locked: false,
+          data: 'https://openlabels.io',
+          errorCorrection: 'M',
+        };
+        addElement(newQr);
       }
     }
   };
@@ -172,18 +202,28 @@ export const EditorStage: React.FC = () => {
     const quadrant = (Math.round(rawRot / 90) * 90) % 360 as 0 | 90 | 180 | 270;
     node.rotation(quadrant);
 
+    let finalWidthMm = newWidthMm;
+    let finalHeightMm = newHeightMm;
+    if (element.type === 'qrcode') {
+      const side = Math.max(newWidthMm, newHeightMm);
+      finalWidthMm = side;
+      finalHeightMm = side;
+    }
+
     updateElement(
       id,
       {
         x: Math.max(0, newMmX),
         y: Math.max(0, newMmY),
-        width: newWidthMm,
-        height: newHeightMm,
+        width: finalWidthMm,
+        height: finalHeightMm,
         rotation: quadrant,
       },
       true
     );
   };
+
+  const selectedElement = selectedIds.length === 1 ? elements.find((el) => el.id === selectedIds[0]) : undefined;
 
   return (
     <Stage
@@ -211,6 +251,7 @@ export const EditorStage: React.FC = () => {
           ref={transformerRef}
           rotateEnabled={true}
           rotationSnaps={[0, 90, 180, 270]}
+          keepRatio={selectedElement?.type === 'qrcode'}
           ignoreStroke={true}
           boundBoxFunc={(oldBox, newBox) => {
             // Disallow negative or microscopic dimensions

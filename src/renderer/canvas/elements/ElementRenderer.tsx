@@ -4,10 +4,14 @@ import {
   TextElement,
   RectangleElement,
   LineElement,
+  BarcodeElement,
+  QrCodeElement,
 } from '../../../core/schemas/label.schema';
 import { TextElementNode } from './TextElementNode';
 import { RectangleElementNode } from './RectangleElementNode';
 import { LineElementNode } from './LineElementNode';
+import { BarcodeElementNode } from './BarcodeElementNode';
+import { QrCodeElementNode } from './QrCodeElementNode';
 import { PlaceholderElementNode } from './PlaceholderElementNode';
 
 interface ElementRendererProps {
@@ -57,7 +61,25 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
         />
       );
     case 'barcode':
+      return (
+        <BarcodeElementNode
+          element={element as BarcodeElement}
+          zoom={zoom}
+          isSelected={isSelected}
+          onSelect={onSelect}
+          onDragEnd={onDragEnd}
+        />
+      );
     case 'qrcode':
+      return (
+        <QrCodeElementNode
+          element={element as QrCodeElement}
+          zoom={zoom}
+          isSelected={isSelected}
+          onSelect={onSelect}
+          onDragEnd={onDragEnd}
+        />
+      );
     case 'image':
     default:
       return (

@@ -11,7 +11,7 @@ import {
   canRedo,
 } from './history';
 
-export type ToolType = 'select' | 'text' | 'rectangle' | 'line' | 'pan';
+export type ToolType = 'select' | 'text' | 'rectangle' | 'line' | 'barcode' | 'qrcode' | 'pan';
 
 export interface GridConfig {
   enabled: boolean;
