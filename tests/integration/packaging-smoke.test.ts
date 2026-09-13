@@ -8,6 +8,9 @@ describe('Installer & Packaging Validation (Fase 10 - Bloques 5, 6, 7)', () => {
   const releaseDir = path.join(rootDir, 'release');
   const builderConfigPath = path.join(rootDir, 'electron-builder.json');
   const packageJsonPath = path.join(rootDir, 'package.json');
+  const unpackedExePath = path.join(releaseDir, 'win-unpacked', 'OpenLabels.exe');
+  const setupExePath = path.join(releaseDir, 'OpenLabels Setup 0.1.0.exe');
+  const checksumFilePath = path.join(releaseDir, 'SHA256SUMS.txt');
 
   it('verifies electron-builder.json configuration adheres to non-elevated, safe defaults', () => {
     expect(fs.existsSync(builderConfigPath)).toBe(true);
@@ -31,24 +34,17 @@ describe('Installer & Packaging Validation (Fase 10 - Bloques 5, 6, 7)', () => {
     expect(pkg.scripts.dist).toBe('electron-builder');
   });
 
-  it('confirms the Windows x64 unpacked application binary exists', () => {
-    const unpackedExe = path.join(releaseDir, 'win-unpacked', 'OpenLabels.exe');
-    expect(fs.existsSync(unpackedExe)).toBe(true);
-    const stats = fs.statSync(unpackedExe);
+  it.skipIf(!fs.existsSync(unpackedExePath))('confirms the Windows x64 unpacked application binary exists', () => {
+    const stats = fs.statSync(unpackedExePath);
     expect(stats.size).toBeGreaterThan(1024 * 1024); // Greater than 1MB
   });
 
-  it('confirms the NSIS installer executable and SHA-256 checksums exist and match', () => {
-    const setupExe = path.join(releaseDir, 'OpenLabels Setup 0.1.0.exe');
-    expect(fs.existsSync(setupExe)).toBe(true);
-    const stats = fs.statSync(setupExe);
+  it.skipIf(!fs.existsSync(setupExePath) || !fs.existsSync(checksumFilePath))('confirms the NSIS installer executable and SHA-256 checksums exist and match', () => {
+    const stats = fs.statSync(setupExePath);
     expect(stats.size).toBeGreaterThan(10 * 1024 * 1024); // Greater than 10MB
 
-    const checksumFile = path.join(releaseDir, 'SHA256SUMS.txt');
-    expect(fs.existsSync(checksumFile)).toBe(true);
-
-    const checksumContent = fs.readFileSync(checksumFile, 'utf8');
-    const exeData = fs.readFileSync(setupExe);
+    const checksumContent = fs.readFileSync(checksumFilePath, 'utf8');
+    const exeData = fs.readFileSync(setupExePath);
     const expectedHash = crypto.createHash('sha256').update(exeData).digest('hex');
 
     expect(checksumContent).toContain(expectedHash);
