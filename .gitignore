@@ -12,6 +12,8 @@ coverage/
 .vscode/
 *.log
 .logs/
+/CONTEXT
+
 
 # Secrets, Environment & Certificates
 .env

@@ -2,7 +2,7 @@ import PDFKit from 'pdfkit';
 import SVGtoPDF from 'svg-to-pdfkit';
 import { PrintPlanBarcode } from '../../../../core/compilers/print-plan/print-plan.types';
 import { mmToPoints } from '../../../../core/compilers/pdf/pdf-units';
-import { renderBarcodeSvg } from '../../../../renderer/barcodes/bwip-adapter';
+import { renderBarcodeSvg } from '../../../../core/barcodes/bwip-adapter';
 
 /**
  * Renders a barcode element vectorially into PDFDocument via SVGtoPDF.
