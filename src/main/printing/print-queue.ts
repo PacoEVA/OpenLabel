@@ -151,6 +151,13 @@ export class PrintQueue extends EventEmitter {
   }
 
   /**
+   * Alias for cancelJob to satisfy standard queue interfaces.
+   */
+  public cancel(jobId: string): boolean {
+    return this.cancelJob(jobId);
+  }
+
+  /**
    * Manually retries a failed job.
    */
   public retryJob(jobId: string): boolean {

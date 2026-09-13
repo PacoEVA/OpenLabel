@@ -135,9 +135,70 @@ const dataSourceAPI = {
   },
 };
 
+const productionAPI = {
+  preflight: async (payload: unknown) => {
+    return ipcRenderer.invoke('production:preflight', payload);
+  },
+  createPlanAndRun: async (payload: unknown) => {
+    return ipcRenderer.invoke('production:create-plan-and-run', payload);
+  },
+  startRun: async (runId: string) => {
+    return ipcRenderer.invoke('production:start-run', runId);
+  },
+  pauseRun: async (runId: string) => {
+    return ipcRenderer.invoke('production:pause-run', runId);
+  },
+  resumeRun: async (runId: string) => {
+    return ipcRenderer.invoke('production:resume-run', runId);
+  },
+  cancelRun: async (runId: string) => {
+    return ipcRenderer.invoke('production:cancel-run', runId);
+  },
+  getRun: async (runId: string) => {
+    return ipcRenderer.invoke('production:get-run', runId);
+  },
+  listRuns: async () => {
+    return ipcRenderer.invoke('production:list-runs');
+  },
+  resolveUnknownItem: async (payload: { runId: string; itemId: string; resolution: 'mark_completed' | 'skip' | 'retry'; forceRetry?: boolean }) => {
+    return ipcRenderer.invoke('production:resolve-unknown', payload);
+  },
+  retryFailedItem: async (payload: { runId: string; itemId: string }) => {
+    return ipcRenderer.invoke('production:retry-failed', payload);
+  },
+  skipItem: async (payload: { runId: string; itemId: string }) => {
+    return ipcRenderer.invoke('production:skip-item', payload);
+  },
+  exportReport: async (payload: { runId: string; format?: 'json' | 'csv' }) => {
+    return ipcRenderer.invoke('production:export-report', payload);
+  },
+  onRunStatusChange: (callback: (run: import('../core/production').ProductionRun) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, run: import('../core/production').ProductionRun) => {
+      callback(run);
+    };
+    ipcRenderer.on('production:run-status-change', listener);
+    return () => {
+      ipcRenderer.removeListener('production:run-status-change', listener);
+    };
+  },
+  onItemStatusChange: (callback: (data: { item: import('../core/production').ProductionItem; run: import('../core/production').ProductionRun }) => void): (() => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      data: { item: import('../core/production').ProductionItem; run: import('../core/production').ProductionRun }
+    ) => {
+      callback(data);
+    };
+    ipcRenderer.on('production:item-status-change', listener);
+    return () => {
+      ipcRenderer.removeListener('production:item-status-change', listener);
+    };
+  },
+};
+
 // Expose safe APIs to the main world under explicit identifiers
 contextBridge.exposeInMainWorld('labelAPI', labelAPI);
 contextBridge.exposeInMainWorld('printAPI', printAPI);
 contextBridge.exposeInMainWorld('documentAPI', documentAPI);
 contextBridge.exposeInMainWorld('dataSourceAPI', dataSourceAPI);
+contextBridge.exposeInMainWorld('productionAPI', productionAPI);
 

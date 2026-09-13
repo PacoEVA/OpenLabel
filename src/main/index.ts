@@ -5,6 +5,7 @@ import { registerLabelIpcHandlers } from './ipc/label.ipc';
 import { registerPrintingIpcHandlers } from './ipc/printing.ipc';
 import { registerDocumentIpcHandlers } from './ipc/document.ipc';
 import { registerDataSourceIpcHandlers } from './ipc/datasource.ipc';
+import { registerProductionIpcHandlers } from './ipc/production.ipc';
 import { CredentialVaultService } from './data-sources/credentials/credential-vault.service';
 
 /**
@@ -72,6 +73,7 @@ app.whenReady().then(() => {
   registerLabelIpcHandlers();
   registerPrintingIpcHandlers();
   registerDocumentIpcHandlers();
+  registerProductionIpcHandlers();
 
   const vaultDir = path.join(app.getPath('userData'), 'vault');
   const vaultService = new CredentialVaultService(vaultDir);

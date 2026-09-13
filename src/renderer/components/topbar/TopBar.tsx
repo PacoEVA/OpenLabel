@@ -10,6 +10,7 @@ import {
   Layers,
   Share2,
   Printer,
+  Factory,
   FilePlus,
   FolderOpen,
   Save,
@@ -31,6 +32,7 @@ import {
 } from '../../store/selectors';
 import { ExportPreviewDialog } from '../export/ExportPreviewDialog';
 import { PrintDialog } from '../printing/PrintDialog';
+import { ProductionModal } from '../production/ProductionModal';
 import { useDocumentOperations } from '../../hooks/useDocumentOperations';
 import { UnsavedChangesDialog } from '../dialogs/UnsavedChangesDialog';
 import { TemplatePickerDialog } from '../dialogs/TemplatePickerDialog';
@@ -48,6 +50,7 @@ export const TopBar: React.FC = () => {
 
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isProductionOpen, setIsProductionOpen] = useState(false);
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
 
@@ -257,6 +260,16 @@ export const TopBar: React.FC = () => {
           <Printer className="w-3.5 h-3.5" />
           <span>Print</span>
         </button>
+
+        {/* Massive Production Batch Trigger (Phase 9) */}
+        <button
+          onClick={() => setIsProductionOpen(true)}
+          title="Massive Batch Production & Industrial Control (Phase 9)"
+          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs flex items-center space-x-1.5 font-medium transition-colors shadow-sm ml-1"
+        >
+          <Factory className="w-3.5 h-3.5" />
+          <span>Production</span>
+        </button>
       </div>
 
       <ExportPreviewDialog
@@ -267,6 +280,11 @@ export const TopBar: React.FC = () => {
       <PrintDialog
         isOpen={isPrintOpen}
         onClose={() => setIsPrintOpen(false)}
+      />
+
+      <ProductionModal
+        isOpen={isProductionOpen}
+        onClose={() => setIsProductionOpen(false)}
       />
 
       <UnsavedChangesDialog

@@ -105,11 +105,29 @@ export interface DataSourceAPI {
   deleteCredential(id: string): Promise<{ success: boolean }>;
 }
 
+export interface ProductionAPI {
+  preflight(payload: unknown): Promise<{ success: boolean; result?: import('../core/production').ProductionPreflightResult; errors?: string[] }>;
+  createPlanAndRun(payload: unknown): Promise<{ success: boolean; plan?: import('../core/production').ProductionPlan; run?: import('../core/production').ProductionRun; errors?: string[] }>;
+  startRun(runId: string): Promise<{ success: boolean; run?: import('../core/production').ProductionRun; error?: string }>;
+  pauseRun(runId: string): Promise<{ success: boolean; run?: import('../core/production').ProductionRun; error?: string }>;
+  resumeRun(runId: string): Promise<{ success: boolean; run?: import('../core/production').ProductionRun; error?: string }>;
+  cancelRun(runId: string): Promise<{ success: boolean; run?: import('../core/production').ProductionRun; error?: string }>;
+  getRun(runId: string): Promise<{ success: boolean; run?: import('../core/production').ProductionRun; error?: string }>;
+  listRuns(): Promise<{ success: boolean; runs: import('../main/production/production-persistence.service').PersistedProductionRecord[] }>;
+  resolveUnknownItem(payload: { runId: string; itemId: string; resolution: 'mark_completed' | 'skip' | 'retry'; forceRetry?: boolean }): Promise<{ success: boolean; item?: import('../core/production').ProductionItem; error?: string }>;
+  retryFailedItem(payload: { runId: string; itemId: string }): Promise<{ success: boolean; item?: import('../core/production').ProductionItem; error?: string }>;
+  skipItem(payload: { runId: string; itemId: string }): Promise<{ success: boolean; item?: import('../core/production').ProductionItem; error?: string }>;
+  exportReport(payload: { runId: string; format?: 'json' | 'csv' }): Promise<{ success: boolean; format: 'json' | 'csv'; content?: string; error?: string }>;
+  onRunStatusChange(callback: (run: import('../core/production').ProductionRun) => void): () => void;
+  onItemStatusChange(callback: (data: { item: import('../core/production').ProductionItem; run: import('../core/production').ProductionRun }) => void): () => void;
+}
+
 declare global {
   interface Window {
     labelAPI: LabelAPI;
     printAPI: PrintAPI;
     documentAPI: DocumentAPI;
     dataSourceAPI: DataSourceAPI;
+    productionAPI: ProductionAPI;
   }
 }
