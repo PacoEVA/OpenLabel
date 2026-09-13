@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Undo2,
   Redo2,
@@ -8,6 +8,7 @@ import {
   Grid,
   Magnet,
   Layers,
+  Share2,
 } from 'lucide-react';
 import { useEditorStore } from '../../store/editor.store';
 import {
@@ -18,6 +19,7 @@ import {
   selectCanUndo,
   selectCanRedo,
 } from '../../store/selectors';
+import { ExportPreviewDialog } from '../export/ExportPreviewDialog';
 
 export const TopBar: React.FC = () => {
   const document = useEditorStore(selectDocument);
@@ -26,6 +28,8 @@ export const TopBar: React.FC = () => {
   const snap = useEditorStore(selectSnap);
   const canUndoAction = useEditorStore(selectCanUndo);
   const canRedoAction = useEditorStore(selectCanRedo);
+
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
@@ -141,7 +145,24 @@ export const TopBar: React.FC = () => {
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
+
+        <div className="h-4 w-px bg-zinc-700/60 mx-1" />
+
+        {/* Export / Preview Dialog Trigger */}
+        <button
+          onClick={() => setIsExportOpen(true)}
+          title="Export & Preview ZPL II / PDF"
+          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs flex items-center space-x-1.5 font-medium transition-colors shadow-sm ml-1"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span>Export</span>
+        </button>
       </div>
+
+      <ExportPreviewDialog
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+      />
     </header>
   );
 };

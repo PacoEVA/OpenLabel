@@ -15,6 +15,10 @@ const labelAPI: LabelAPI = {
   getHardwareProfiles: async (): Promise<HardwareProfiles> => {
     return ipcRenderer.invoke('label:get-hardware-profiles');
   },
+
+  generatePdf: async (doc: unknown) => {
+    return ipcRenderer.invoke('label:generate-pdf', doc);
+  },
 };
 
 // Expose the API to the main world under the identifier 'labelAPI'

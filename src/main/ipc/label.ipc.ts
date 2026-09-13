@@ -51,4 +51,40 @@ export function registerLabelIpcHandlers(): void {
       supportedDpis: [...SUPPORTED_DPIS],
     };
   });
+
+  // Discrete channel for PDF generation in Main Process
+  ipcMain.handle('label:generate-pdf', async (_event, payload: unknown) => {
+    try {
+      const parseResult = LabelDocumentSchema.safeParse(payload);
+      if (!parseResult.success) {
+        return {
+          success: false,
+          errors: parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        };
+      }
+
+      const { renderLabelToPdf } = await import('../export/pdf/pdf-renderer');
+      const renderRes = await renderLabelToPdf(parseResult.data);
+
+      if (!renderRes.success) {
+        return {
+          success: false,
+          errors: renderRes.errors.map((e) => `[${e.code}] ${e.message}`),
+          warnings: renderRes.warnings,
+        };
+      }
+
+      const base64 = Buffer.from(renderRes.data).toString('base64');
+      return {
+        success: true,
+        pdfBase64: base64,
+        warnings: renderRes.warnings,
+      };
+    } catch (err: unknown) {
+      return {
+        success: false,
+        errors: ['An error occurred while generating the PDF document.'],
+      };
+    }
+  });
 }
