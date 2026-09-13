@@ -3,6 +3,8 @@ import { X, Copy, Check, FileCode, FileText, Download, Loader2 } from 'lucide-re
 import { useEditorStore } from '../../store/editor.store';
 import { selectDocument } from '../../store/selectors';
 import { compileLabelToZpl } from '../../../core/compilers/zpl/zpl-compiler';
+import { generateRecords } from '../../../core/data/batch-generator';
+import { resolveDocument } from '../../../core/data/document-resolver';
 import { CompileIssues } from './CompileIssues';
 
 interface ExportPreviewDialogProps {
@@ -12,6 +14,9 @@ interface ExportPreviewDialogProps {
 
 export const ExportPreviewDialog: React.FC<ExportPreviewDialogProps> = ({ isOpen, onClose }) => {
   const document = useEditorStore(selectDocument);
+  const previewRecordIndex = useEditorStore((s) => s.previewRecordIndex);
+  const previewInputs = useEditorStore((s) => s.previewInputs);
+
   const [activeTab, setActiveTab] = useState<'zpl' | 'pdf'>('zpl');
   const [copied, setCopied] = useState(false);
 
@@ -21,11 +26,31 @@ export const ExportPreviewDialog: React.FC<ExportPreviewDialogProps> = ({ isOpen
   const [pdfErrors, setPdfErrors] = useState<string[]>([]);
   const [pdfWarnings, setPdfWarnings] = useState<Array<{ code: string; message: string }>>([]);
 
-  // Compile ZPL whenever dialog is open and document changes
+  // Resolve document with active preview record if variable fields exist
+  const resolvedExportDoc = useMemo(() => {
+    if (!document.dataModel || document.dataModel.fields.length === 0) {
+      return document;
+    }
+    const genRes = generateRecords({
+      fields: document.dataModel.fields,
+      count: previewRecordIndex + 1,
+      context: { now: new Date() },
+      userInputs: previewInputs,
+    });
+    if (genRes.success && genRes.records[previewRecordIndex]) {
+      const resDoc = resolveDocument(document, genRes.records[previewRecordIndex]);
+      if (resDoc.success) {
+        return resDoc.document;
+      }
+    }
+    return document;
+  }, [document, previewRecordIndex, previewInputs]);
+
+  // Compile ZPL whenever dialog is open and resolved document changes
   const zplResult = useMemo(() => {
     if (!isOpen) return null;
-    return compileLabelToZpl(document);
-  }, [isOpen, document]);
+    return compileLabelToZpl(resolvedExportDoc);
+  }, [isOpen, resolvedExportDoc]);
 
   // Handle PDF Generation
   const handleGeneratePdf = async () => {
@@ -36,7 +61,7 @@ export const ExportPreviewDialog: React.FC<ExportPreviewDialogProps> = ({ isOpen
 
     try {
       if (typeof window !== 'undefined' && window.labelAPI?.generatePdf) {
-        const res = await window.labelAPI.generatePdf(document);
+        const res = await window.labelAPI.generatePdf(resolvedExportDoc);
         if (res.success && res.pdfBase64) {
           setPdfBase64(res.pdfBase64);
           setPdfWarnings(res.warnings || []);

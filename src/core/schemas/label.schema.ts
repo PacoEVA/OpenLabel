@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LabelDataModelSchema, LabelDataModel } from '../data/data.schema';
 
 /**
  * OpenLabels - Label Document Schema & Types
@@ -144,5 +145,6 @@ export const LabelDocumentSchema = z.object({
   meta: DocumentMetaSchema,
   dimensions: LabelDimensionsSchema,
   elements: z.array(LabelElementSchema),
+  dataModel: LabelDataModelSchema.optional(),
 });
 export type LabelDocument = z.infer<typeof LabelDocumentSchema>;

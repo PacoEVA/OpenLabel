@@ -161,4 +161,90 @@ describe('Label File Container & Serialization (Bloque 1)', () => {
       expect(res.errors[0].message).toContain('dimensions.width');
     }
   });
+
+  it('persists and round-trips dataModel with variable fields losslessly', () => {
+    const docWithDataModel: LabelDocument = {
+      ...canonicalDoc,
+      dataModel: {
+        fields: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            name: 'serial',
+            type: 'counter',
+            start: 100,
+            step: 2,
+            padding: 5,
+            prefix: 'SN-',
+          },
+          {
+            id: '123e4567-e89b-12d3-a456-426614174002',
+            name: 'exp_date',
+            type: 'date',
+            mode: 'relative',
+            offset: { months: 6 },
+            format: 'YYYY-MM-DD',
+          },
+          {
+            id: '123e4567-e89b-12d3-a456-426614174003',
+            name: 'batch',
+            type: 'input',
+            required: true,
+          },
+          {
+            id: '123e4567-e89b-12d3-a456-426614174004',
+            name: 'org',
+            type: 'static',
+            value: 'Acme Corp',
+          },
+        ],
+      },
+    };
+
+    const saveRes = serializeLabelFile(docWithDataModel);
+    expect(saveRes.success).toBe(true);
+
+    if (saveRes.success) {
+      const loadRes = deserializeLabelFile(saveRes.json);
+      expect(loadRes.success).toBe(true);
+      if (loadRes.success) {
+        expect(loadRes.document.dataModel).toBeDefined();
+        expect(loadRes.document.dataModel?.fields).toHaveLength(4);
+        expect(loadRes.document).toEqual(docWithDataModel);
+      }
+    }
+  });
+
+  it('loads legacy document without dataModel with full backward compatibility', () => {
+    // Document serialized without dataModel field
+    const legacyDoc = {
+      version: '1.0.0',
+      meta: {
+        title: 'Legacy Label',
+        author: 'Legacy User',
+        created: '2025-01-01T00:00:00.000Z',
+      },
+      dimensions: {
+        width: 100,
+        height: 50,
+        unit: 'mm',
+        dpi: 203,
+      },
+      elements: [],
+    };
+
+    const legacyContainerJson = JSON.stringify({
+      format: 'open-label',
+      formatVersion: 1,
+      document: legacyDoc,
+    });
+
+    const loadRes = deserializeLabelFile(legacyContainerJson);
+    expect(loadRes.success).toBe(true);
+    if (loadRes.success) {
+      expect(loadRes.document.version).toBe('1.0.0');
+      expect(loadRes.document.meta.title).toBe('Legacy Label');
+      // dataModel is optional, does not cause error
+      expect(loadRes.document.dataModel).toBeUndefined();
+    }
+  });
 });

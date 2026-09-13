@@ -11,6 +11,8 @@ import {
 import { type LabelDocument, LabelDocumentSchema } from '../../core/schemas/label.schema';
 import { compileLabelToZpl } from '../../core/compilers/zpl/zpl-compiler';
 import { renderLabelToPdf } from '../export/pdf/pdf-renderer';
+import { generateRecords } from '../../core/data/batch-generator';
+import { resolveDocument } from '../../core/data/document-resolver';
 import { PrintQueue } from './print-queue';
 import { PrinterProfileStore } from './printer-profile.store';
 import { TcpRawTransport } from './transports/tcp-raw.transport';
@@ -158,10 +160,33 @@ export class PrintingService {
       };
     }
 
+    let docToPrint = request.document;
+    if (docToPrint.dataModel && docToPrint.dataModel.fields.length > 0) {
+      const genRes = generateRecords({
+        fields: docToPrint.dataModel.fields,
+        count: 1,
+        context: { now: new Date() },
+      });
+      if (!genRes.success) {
+        return {
+          success: false,
+          errors: genRes.errors.map((e) => `[${e.code}] ${e.message}`),
+        };
+      }
+      const resolveRes = resolveDocument(docToPrint, genRes.records[0]);
+      if (!resolveRes.success) {
+        return {
+          success: false,
+          errors: resolveRes.errors.map((e) => `[${e.code}] ${e.message}`),
+        };
+      }
+      docToPrint = resolveRes.document;
+    }
+
     let artifact: PrintArtifact;
 
     if (profile.language === 'zpl') {
-      const compileRes = compileLabelToZpl(request.document, { dpi: profile.dpi ?? 203 });
+      const compileRes = compileLabelToZpl(docToPrint, { dpi: profile.dpi ?? 203 });
       if (!compileRes.success) {
         return {
           success: false,
@@ -174,7 +199,7 @@ export class PrintingService {
         dpi: profile.dpi ?? 203,
       };
     } else if (profile.language === 'pdf') {
-      const pdfRes = await renderLabelToPdf(request.document);
+      const pdfRes = await renderLabelToPdf(docToPrint);
       if (!pdfRes.success) {
         return {
           success: false,

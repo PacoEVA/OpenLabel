@@ -9,3 +9,4 @@ export * from './barcodes';
 export * from './compilers';
 export * from './printing';
 export * from './documents';
+export * from './data';

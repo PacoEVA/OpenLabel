@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Stage, Layer, Transformer } from 'react-konva';
 import Konva from 'konva';
 import { useEditorStore } from '../store/editor.store';
@@ -15,6 +15,8 @@ import { ElementRenderer } from './elements/ElementRenderer';
 import { mmToCanvasPx, canvasPxToMm } from './coordinates';
 import { snapPointToBoundsAndGrid } from './snapping';
 import { LabelElement } from '../../core/schemas/label.schema';
+import { generateRecords } from '../../core/data/batch-generator';
+import { resolveDocument } from '../../core/data/document-resolver';
 
 export const EditorStage: React.FC = () => {
   const document = useEditorStore(selectDocument);
@@ -22,6 +24,10 @@ export const EditorStage: React.FC = () => {
   const selectedIds = useEditorStore(selectSelectedElementIds);
   const zoom = useEditorStore(selectZoom);
   const activeTool = useEditorStore(selectActiveTool);
+
+  const isPreviewActive = useEditorStore((s) => s.isPreviewActive);
+  const previewRecordIndex = useEditorStore((s) => s.previewRecordIndex);
+  const previewInputs = useEditorStore((s) => s.previewInputs);
 
   const selectElement = useEditorStore((s) => s.selectElement);
   const clearSelection = useEditorStore((s) => s.clearSelection);
@@ -33,6 +39,27 @@ export const EditorStage: React.FC = () => {
 
   const stageWidth = mmToCanvasPx(document.dimensions.width, zoom);
   const stageHeight = mmToCanvasPx(document.dimensions.height, zoom);
+
+  // Compute rendered elements (resolving placeholders dynamically if preview mode is active)
+  const renderedElements = useMemo(() => {
+    if (!isPreviewActive || !document.dataModel || document.dataModel.fields.length === 0) {
+      return elements;
+    }
+
+    const genResult = generateRecords({
+      fields: document.dataModel.fields,
+      count: previewRecordIndex + 1,
+      context: { now: new Date() },
+      userInputs: previewInputs,
+    });
+
+    if (!genResult.success || !genResult.records[previewRecordIndex]) {
+      return elements;
+    }
+
+    const resolved = resolveDocument(document, genResult.records[previewRecordIndex]);
+    return resolved.success ? resolved.document.elements : elements;
+  }, [isPreviewActive, previewRecordIndex, previewInputs, document, elements]);
 
   // Synchronize Konva.Transformer with currently selected element
   useEffect(() => {
@@ -235,33 +262,35 @@ export const EditorStage: React.FC = () => {
     >
       <Layer>
         {/* Render all elements in document layer order */}
-        {elements.map((el) => (
+        {renderedElements.map((el) => (
           <ElementRenderer
             key={el.id}
             element={el}
             zoom={zoom}
-            isSelected={selectedIds.includes(el.id)}
-            onSelect={(multi) => selectElement(el.id, multi)}
-            onDragEnd={(newX, newY) => handleElementDragEnd(el.id, newX, newY)}
+            isSelected={!isPreviewActive && selectedIds.includes(el.id)}
+            onSelect={(multi) => (!isPreviewActive ? selectElement(el.id, multi) : undefined)}
+            onDragEnd={(newX, newY) => (!isPreviewActive ? handleElementDragEnd(el.id, newX, newY) : undefined)}
           />
         ))}
 
-        {/* Transformer for selected element */}
-        <Transformer
-          ref={transformerRef}
-          rotateEnabled={true}
-          rotationSnaps={[0, 90, 180, 270]}
-          keepRatio={selectedElement?.type === 'qrcode'}
-          ignoreStroke={true}
-          boundBoxFunc={(oldBox, newBox) => {
-            // Disallow negative or microscopic dimensions
-            if (newBox.width < 5 || newBox.height < 5) {
-              return oldBox;
-            }
-            return newBox;
-          }}
-          onTransformEnd={handleTransformEnd}
-        />
+        {/* Transformer for selected element (hidden in preview mode) */}
+        {!isPreviewActive && (
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled={true}
+            rotationSnaps={[0, 90, 180, 270]}
+            keepRatio={selectedElement?.type === 'qrcode'}
+            ignoreStroke={true}
+            boundBoxFunc={(oldBox, newBox) => {
+              // Disallow negative or microscopic dimensions
+              if (newBox.width < 5 || newBox.height < 5) {
+                return oldBox;
+              }
+              return newBox;
+            }}
+            onTransformEnd={handleTransformEnd}
+          />
+        )}
       </Layer>
     </Stage>
   );

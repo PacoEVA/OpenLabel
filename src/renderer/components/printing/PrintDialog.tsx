@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorStore } from '../../store/editor.store';
 import type { PrinterProfile } from '../../../core/printing';
+import { generateRecords } from '../../../core/data/batch-generator';
+import { resolveDocument } from '../../../core/data/document-resolver';
 import { PrintJobHistory } from './PrintJobHistory';
 import { ProfileManager } from './ProfileManager';
 import {
@@ -57,8 +59,32 @@ export const PrintDialog: React.FC<PrintDialogProps> = ({ isOpen, onClose }) => 
     setFeedback(null);
 
     try {
+      let docToSend = document;
+      if (document.dataModel && document.dataModel.fields.length > 0) {
+        const previewRecordIndex = useEditorStore.getState().previewRecordIndex;
+        const previewInputs = useEditorStore.getState().previewInputs;
+        const genRes = generateRecords({
+          fields: document.dataModel.fields,
+          count: previewRecordIndex + 1,
+          context: { now: new Date() },
+          userInputs: previewInputs,
+        });
+        if (genRes.success && genRes.records[previewRecordIndex]) {
+          const resDoc = resolveDocument(document, genRes.records[previewRecordIndex]);
+          if (resDoc.success) {
+            docToSend = resDoc.document;
+          } else {
+            setFeedback({
+              success: false,
+              message: resDoc.errors.map((e) => e.message).join('\n'),
+            });
+            return;
+          }
+        }
+      }
+
       const result = await window.printAPI.createJob({
-        document,
+        document: docToSend,
         printerProfileId: selectedProfileId,
         copies: Math.max(1, Math.min(999, copies)),
       });

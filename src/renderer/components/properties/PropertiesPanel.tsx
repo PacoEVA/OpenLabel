@@ -23,6 +23,8 @@ import {
 import { calculateEan13CheckDigit } from '../../../core/barcodes/symbologies/ean13';
 import { validateBarcodeData } from '../../../core/barcodes/barcode-validator';
 import { dotsToMm } from '../../../core/units/converter';
+import { InsertVariableDropdown } from './InsertVariableDropdown';
+import { extractFieldNames } from '../../../core/data/template-parser';
 
 export const PropertiesPanel: React.FC = () => {
   const selectedElement = useEditorStore(selectFirstSelectedElement);
@@ -187,7 +189,17 @@ export const PropertiesPanel: React.FC = () => {
               <span>Text Properties</span>
             </h4>
             <div>
-              <label className="text-2xs text-zinc-500 block mb-1">Content</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-2xs text-zinc-500 block">Content</label>
+                <InsertVariableDropdown
+                  fields={document.dataModel?.fields ?? []}
+                  disabled={selectedElement.locked}
+                  onInsert={(placeholder) => {
+                    const current = (selectedElement as TextElement).content;
+                    updateElement(selectedElement.id, { content: current + placeholder }, true);
+                  }}
+                />
+              </div>
               <input
                 type="text"
                 disabled={selectedElement.locked}
@@ -372,7 +384,17 @@ export const PropertiesPanel: React.FC = () => {
 
               {/* Data Input */}
               <div>
-                <label className="text-2xs text-zinc-500 block mb-1">Data / Value</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-2xs text-zinc-500 block">Data / Value</label>
+                  <InsertVariableDropdown
+                    fields={document.dataModel?.fields ?? []}
+                    disabled={selectedElement.locked}
+                    onInsert={(placeholder) => {
+                      const current = barcodeEl.data;
+                      updateElement(selectedElement.id, { data: current + placeholder }, true);
+                    }}
+                  />
+                </div>
                 <input
                   type="text"
                   disabled={selectedElement.locked}
@@ -381,17 +403,23 @@ export const PropertiesPanel: React.FC = () => {
                     updateElement(selectedElement.id, { data: e.target.value }, true)
                   }
                   className={`w-full bg-zinc-900 border rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none disabled:opacity-50 ${
-                    validation.valid
+                    validation.valid || extractFieldNames(barcodeEl.data).length > 0
                       ? 'border-zinc-700/60 focus:border-blue-500'
                       : 'border-rose-500/80 focus:border-rose-400'
                   }`}
                 />
-                {!validation.valid && (
+                {extractFieldNames(barcodeEl.data).length > 0 ? (
+                  <div className="mt-1 text-3xs text-blue-400 flex items-center space-x-1">
+                    <span className="bg-blue-950/80 border border-blue-800/40 rounded px-1.5 py-0.5">
+                      Variable Template: {extractFieldNames(barcodeEl.data).join(', ')}
+                    </span>
+                  </div>
+                ) : !validation.valid ? (
                   <div className="mt-1 text-2xs text-rose-400 flex items-start space-x-1">
                     <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                     <span>{validation.error}</span>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* EAN-13 Specific Check Digit Status */}
@@ -490,7 +518,17 @@ export const PropertiesPanel: React.FC = () => {
 
               {/* Data / Payload */}
               <div>
-                <label className="text-2xs text-zinc-500 block mb-1">Data / URL</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-2xs text-zinc-500 block">Data / URL</label>
+                  <InsertVariableDropdown
+                    fields={document.dataModel?.fields ?? []}
+                    disabled={selectedElement.locked}
+                    onInsert={(placeholder) => {
+                      const current = qrEl.data;
+                      updateElement(selectedElement.id, { data: current + placeholder }, true);
+                    }}
+                  />
+                </div>
                 <textarea
                   rows={3}
                   disabled={selectedElement.locked}
@@ -499,17 +537,23 @@ export const PropertiesPanel: React.FC = () => {
                     updateElement(selectedElement.id, { data: e.target.value }, true)
                   }
                   className={`w-full bg-zinc-900 border rounded px-2 py-1 text-zinc-200 text-xs focus:outline-none disabled:opacity-50 resize-none ${
-                    validation.valid
+                    validation.valid || extractFieldNames(qrEl.data).length > 0
                       ? 'border-zinc-700/60 focus:border-blue-500'
                       : 'border-rose-500/80 focus:border-rose-400'
                   }`}
                 />
-                {!validation.valid && (
+                {extractFieldNames(qrEl.data).length > 0 ? (
+                  <div className="mt-1 text-3xs text-blue-400 flex items-center space-x-1">
+                    <span className="bg-blue-950/80 border border-blue-800/40 rounded px-1.5 py-0.5">
+                      Variable Template: {extractFieldNames(qrEl.data).join(', ')}
+                    </span>
+                  </div>
+                ) : !validation.valid ? (
                   <div className="mt-1 text-2xs text-rose-400 flex items-start space-x-1">
                     <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                     <span>{validation.error}</span>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Error Correction Level */}

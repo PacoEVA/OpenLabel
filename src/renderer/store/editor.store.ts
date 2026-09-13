@@ -11,6 +11,8 @@ import {
   canRedo,
 } from './history';
 import { DocumentSession, getDocumentDisplayName } from '../../core/documents';
+import { DataField, DataFieldSchema, FIELD_NAME_REGEX } from '../../core/data/data.schema';
+import { findFieldUsages, renameFieldInDocument } from '../../core/data/field-usage';
 
 export type ToolType = 'select' | 'text' | 'rectangle' | 'line' | 'barcode' | 'qrcode' | 'pan';
 
@@ -87,6 +89,20 @@ export interface EditorState {
   // History actions
   undo: () => void;
   redo: () => void;
+
+  // Data Model actions
+  addField: (field: DataField) => { success: boolean; error?: string };
+  updateField: (id: string, patch: Partial<DataField>) => { success: boolean; error?: string };
+  renameField: (oldName: string, newName: string) => { success: boolean; error?: string };
+  removeField: (id: string) => { success: boolean; error?: string };
+
+  // Preview state & actions
+  isPreviewActive: boolean;
+  previewRecordIndex: number;
+  previewInputs: Record<string, string>;
+  setPreviewActive: (active: boolean) => void;
+  setPreviewRecordIndex: (index: number) => void;
+  setPreviewInputs: (inputs: Record<string, string>) => void;
 }
 
 /**
@@ -107,6 +123,9 @@ export function createDefaultDocument(overrides?: Partial<LabelDocument>): Label
       dpi: 203,
     },
     elements: [],
+    dataModel: {
+      fields: [],
+    },
     ...overrides,
   };
 }
@@ -157,15 +176,27 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   history: createHistoryState(),
   isDocumentOpen: false,
 
+  // Preview state
+  isPreviewActive: false,
+  previewRecordIndex: 0,
+  previewInputs: {},
+
   setDocument: (doc: LabelDocument, options?: { filePath?: string | null; isMigrated?: boolean }) => {
-    const json = JSON.stringify(doc);
+    const normalizedDoc: LabelDocument = {
+      ...doc,
+      dataModel: doc.dataModel ?? { fields: [] },
+    };
+    const json = JSON.stringify(normalizedDoc);
     const filePath = options?.filePath !== undefined ? options.filePath : null;
     set({
-      document: doc,
+      document: normalizedDoc,
       savedSnapshotJson: json,
       selectedElementIds: [],
       history: createHistoryState(),
       isDocumentOpen: true,
+      isPreviewActive: false,
+      previewRecordIndex: 0,
+      previewInputs: {},
       session: {
         filePath,
         displayName: getDocumentDisplayName(doc.meta.title, filePath),
@@ -201,6 +232,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedElementIds: [],
       history: createHistoryState(),
       isDocumentOpen: true,
+      isPreviewActive: false,
+      previewRecordIndex: 0,
+      previewInputs: {},
       session: {
         filePath: null,
         displayName: getDocumentDisplayName(doc.meta.title, null),
@@ -217,6 +251,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       isDocumentOpen: false,
       selectedElementIds: [],
+      isPreviewActive: false,
+      previewRecordIndex: 0,
+      previewInputs: {},
     });
   },
 
@@ -494,5 +531,159 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         history: result.newHistory,
       });
     }
+  },
+
+  addField: (field: DataField) => {
+    const parseRes = DataFieldSchema.safeParse(field);
+    if (!parseRes.success) {
+      return { success: false, error: parseRes.error.errors[0]?.message || 'Invalid field definition' };
+    }
+
+    const { document, history, session, savedSnapshotJson } = get();
+    const currentFields = document.dataModel?.fields ?? [];
+
+    if (currentFields.some((f) => f.name === field.name)) {
+      return { success: false, error: `Field with name '${field.name}' already exists` };
+    }
+    if (currentFields.some((f) => f.id === field.id)) {
+      return { success: false, error: `Field with id '${field.id}' already exists` };
+    }
+
+    const newHistory = pushHistory(history, document);
+    const newDoc: LabelDocument = {
+      ...document,
+      dataModel: {
+        fields: [...currentFields, field],
+      },
+    };
+
+    set({
+      document: newDoc,
+      session: computeSession(session, newDoc, savedSnapshotJson),
+      history: newHistory,
+    });
+
+    return { success: true };
+  },
+
+  updateField: (id: string, patch: Partial<DataField>) => {
+    const { document, history, session, savedSnapshotJson } = get();
+    const currentFields = document.dataModel?.fields ?? [];
+    const targetField = currentFields.find((f) => f.id === id);
+    if (!targetField) {
+      return { success: false, error: `Field with id '${id}' not found` };
+    }
+
+    // If renaming field name, delegate to atomic renameField
+    if (patch.name && patch.name !== targetField.name) {
+      return get().renameField(targetField.name, patch.name);
+    }
+
+    const merged = { ...targetField, ...patch } as DataField;
+    const parseRes = DataFieldSchema.safeParse(merged);
+    if (!parseRes.success) {
+      return { success: false, error: parseRes.error.errors[0]?.message || 'Invalid field update' };
+    }
+
+    const newHistory = pushHistory(history, document);
+    const newFields = currentFields.map((f) => (f.id === id ? merged : f));
+    const newDoc: LabelDocument = {
+      ...document,
+      dataModel: {
+        fields: newFields,
+      },
+    };
+
+    set({
+      document: newDoc,
+      session: computeSession(session, newDoc, savedSnapshotJson),
+      history: newHistory,
+    });
+
+    return { success: true };
+  },
+
+  renameField: (oldName: string, newName: string) => {
+    if (!FIELD_NAME_REGEX.test(newName)) {
+      return {
+        success: false,
+        error: `Invalid field name '${newName}'. Must start with letter or underscore and contain only alphanumeric characters.`,
+      };
+    }
+
+    const { document, history, session, savedSnapshotJson } = get();
+    const currentFields = document.dataModel?.fields ?? [];
+
+    if (!currentFields.some((f) => f.name === oldName)) {
+      return { success: false, error: `Field '${oldName}' not found` };
+    }
+
+    if (oldName !== newName && currentFields.some((f) => f.name === newName)) {
+      return { success: false, error: `A field named '${newName}' already exists` };
+    }
+
+    const newHistory = pushHistory(history, document);
+    const newDoc = renameFieldInDocument(document, oldName, newName);
+
+    set({
+      document: newDoc,
+      session: computeSession(session, newDoc, savedSnapshotJson),
+      history: newHistory,
+    });
+
+    return { success: true };
+  },
+
+  removeField: (id: string) => {
+    const { document, history, session, savedSnapshotJson } = get();
+    const currentFields = document.dataModel?.fields ?? [];
+    const targetField = currentFields.find((f) => f.id === id);
+    if (!targetField) {
+      return { success: false, error: `Field with id '${id}' not found` };
+    }
+
+    const usages = findFieldUsages(document, targetField.name);
+    if (usages.length > 0) {
+      return {
+        success: false,
+        error: `Cannot delete field '${targetField.name}': it is referenced by ${usages.length} element(s). Remove references first.`,
+      };
+    }
+
+    const newHistory = pushHistory(history, document);
+    const newFields = currentFields.filter((f) => f.id !== id);
+    const newDoc: LabelDocument = {
+      ...document,
+      dataModel: {
+        fields: newFields,
+      },
+    };
+
+    set({
+      document: newDoc,
+      session: computeSession(session, newDoc, savedSnapshotJson),
+      history: newHistory,
+    });
+
+    return { success: true };
+  },
+
+  setPreviewActive: (active: boolean) => {
+    set({
+      isPreviewActive: active,
+      previewRecordIndex: 0,
+    });
+  },
+
+  setPreviewRecordIndex: (index: number) => {
+    set({
+      previewRecordIndex: Math.max(0, index),
+    });
+  },
+
+  setPreviewInputs: (inputs: Record<string, string>) => {
+    set({
+      previewInputs: inputs,
+    });
   },
 }));

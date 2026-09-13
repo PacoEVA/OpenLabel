@@ -63,8 +63,33 @@ export function registerLabelIpcHandlers(): void {
         };
       }
 
+      let docToRender = parseResult.data;
+      if (docToRender.dataModel && docToRender.dataModel.fields.length > 0) {
+        const { generateRecords } = await import('../../core/data/batch-generator');
+        const { resolveDocument } = await import('../../core/data/document-resolver');
+        const genRes = generateRecords({
+          fields: docToRender.dataModel.fields,
+          count: 1,
+          context: { now: new Date() },
+        });
+        if (!genRes.success) {
+          return {
+            success: false,
+            errors: genRes.errors.map((e) => `[${e.code}] ${e.message}`),
+          };
+        }
+        const resolveRes = resolveDocument(docToRender, genRes.records[0]);
+        if (!resolveRes.success) {
+          return {
+            success: false,
+            errors: resolveRes.errors.map((e) => `[${e.code}] ${e.message}`),
+          };
+        }
+        docToRender = resolveRes.document;
+      }
+
       const { renderLabelToPdf } = await import('../export/pdf/pdf-renderer');
-      const renderRes = await renderLabelToPdf(parseResult.data);
+      const renderRes = await renderLabelToPdf(docToRender);
 
       if (!renderRes.success) {
         return {
